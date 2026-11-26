@@ -29,7 +29,7 @@ BEGIN
     END IF;
 
     # Establecemos la fecha de fin del contrato del empleado
-    UPDATE employees SET end_date = p_end_date WHERE employee_id = p_employee_id AND end_date > CURRENT_DATE;
+    UPDATE employees SET end_date = p_end_date WHERE employee_id = p_employee_id AND (end_date > CURRENT_DATE OR end_date IS NULL);
 
 	 # Para saber si el empleado no está entre los empleados, si no se ha modificado ninguna fila, entonces la condición del WHERE no se ha cumplido
     IF ROW_COUNT() = 0 THEN
@@ -56,14 +56,27 @@ DELIMITER //
 CREATE OR REPLACE FUNCTION f_num_subordinates(p_employee_id INT)
 RETURNS INT
 BEGIN
-    DECLARE v_total INT;
+    DECLARE v_res INT;
 
-    SELECT COUNT(*) INTO v_total
-    FROM employees
-    WHERE boss_id = p_employee_id;
+    SELECT COUNT(*) INTO v_res FROM employees WHERE boss_id = p_employee_id;
 
-    RETURN v_total;
+    RETURN v_res;
 END //
 
 DELIMITER ;
 
+# Ahora testeamos con la prueba
+
+CALL p_populate();
+
+# Pedro (1) tiene tres subordinados (Luis, Ana y Daniel), pero solo Daniel está activo
+SELECT f_num_subordinates(1);
+CALL p_end_contract(1, '2026-12-31');
+
+# Pedro tiene fecha de fin y Daniel pasa a su jefe (Pedro no tiene: queda sin jefe)
+SELECT * FROM employees;
+SELECT f_num_subordinates(1);
+
+# Deben fallar
+CALL p_end_contract(4, '2026-12-31'); # Luis ya terminó
+CALL p_end_contract(99, '2026-12-31'); # No existe
