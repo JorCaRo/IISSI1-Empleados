@@ -80,3 +80,32 @@ SELECT f_num_subordinates(1);
 # Deben fallar
 CALL p_end_contract(4, '2026-12-31'); # Luis ya terminó
 CALL p_end_contract(99, '2026-12-31'); # No existe
+
+#-------------------------------------------------------------------------------------------------------------
+
+# Ejercicio 2
+
+# Implementaré un procedimiento p_raise_department_salaries que suba un porcentaje (mayor que 0 y como mucho 10) el salario
+# de los empleados activos de un departamento, y que rechace los departamentos sin empleados activos
+
+DELIMITER //
+
+CREATE OR REPLACE PROCEDURE p_raise_department_salaries(p_department_id INT, p_percentage DOUBLE)
+BEGIN
+   IF p_percentage IS NULL OR p_percentage <= 0 OR p_percentage > 10 THEN
+      SIGNAL SQLSTATE '45000'
+         SET MESSAGE_TEXT = 'El porcentaje debe ser mayor que 0 y como mucho 10';
+   END IF;
+
+   IF NOT EXISTS (
+      SELECT 1 FROM employees WHERE department_id = p_department_id AND (end_date > CURRENT_DATE OR end_date IS NULL);
+   )THEN
+      SIGNAL SQLSTATE '45000'
+         SET MESSAGE_TEXT = 'El departamento no tiene empleados activos';
+   END IF;
+
+   UPDATE employees SET salary = salary * (1 + p_percentage / 100) WHERE department_id = p_department_id AND (end_date > CURRENT_DATE OR end_date IS NULL);
+END //
+
+DELIMITER ;
+
