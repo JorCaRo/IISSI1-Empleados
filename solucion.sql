@@ -25,11 +25,11 @@ BEGIN
 
     IF p_end_date IS NULL THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Debes indicar una fecha de fin';
+            SET MESSAGE_TEXT = 'Hay que establecer una fecha de fin de contrato';
     END IF;
 
     # Establecemos la fecha de fin del contrato del empleado
-    UPDATE employees SET end_date = p_end_date WHERE employee_id = p_employee_id;
+    UPDATE employees SET end_date = p_end_date WHERE employee_id = p_employee_id AND end_date > CURRENT_DATE;
 
 	 # Para saber si el empleado no está entre los empleados, si no se ha modificado ninguna fila, entonces la condición del WHERE no se ha cumplido
     IF ROW_COUNT() = 0 THEN
@@ -48,4 +48,22 @@ END //
 
 DELIMITER ;
 
+# Ahora creamos la función f_num_subordinates
+# Devuelve el número de subordinados activos de un empleado
+
+DELIMITER //
+
+CREATE OR REPLACE FUNCTION f_num_subordinates(p_employee_id INT)
+RETURNS INT
+BEGIN
+    DECLARE v_total INT;
+
+    SELECT COUNT(*) INTO v_total
+    FROM employees
+    WHERE boss_id = p_employee_id;
+
+    RETURN v_total;
+END //
+
+DELIMITER ;
 
