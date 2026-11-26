@@ -109,3 +109,36 @@ END //
 
 DELIMITER ;
 
+# Ahora creamos una función f_seniority que devuelva los años de antigüedad de un empleado 
+# y úsela en una consulta que ordene a los empleados por antigüedad
+
+DELIMITER //
+CREATE OR REPLACE FUNCTION f_seniority(p_employee_id INT) 
+RETURNS INT
+BEGIN
+	DECLARE v_inicio DATE;
+   DECLARE v_fin DATE;
+   DECLARE v_anios INT;
+   
+   IF NOT EXISTS (
+      SELECT 1 FROM employees WHERE employee_id = p_employee_id;
+   )THEN
+      SIGNAL SQLSTATE '45000'
+         SET MESSAGE_TEXT = 'El empleado no existe';
+   END IF;
+
+   SELECT start_date INTO v_inicio FROM employees WHERE employee_id = p_employee_id;
+	SELECT end_date INTO v_fin FROM employees WHERE employee_id = p_employee_id AND end_date IS NULL;
+	SELECT CURRENT_DATE INTO v_fin FROM employees WHERE employee_id = p_employee_id AND end_date IS NOT NULL;
+	
+
+   SET v_anios = YEAR(v_fin) - YEAR(v_inicio);
+
+   
+
+   RETURN v_anios;
+	
+END //
+
+DELIMITER ;
+
